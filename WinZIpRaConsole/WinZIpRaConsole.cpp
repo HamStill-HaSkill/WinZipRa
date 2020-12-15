@@ -5,7 +5,7 @@
 #include "Node.h"
 #include <bitset>
 #define freqSize 256
-#define ioSize 32
+#define ioSize 1024 * 1024 * 1
 
 using PriQueue = std::priority_queue<Node::pointer, std::vector<Node::pointer>, LowestPriority>;
 
@@ -68,7 +68,7 @@ void ZipFile(std::string fileName, std::vector<int> frequency, std::string code)
     std::ofstream ofs(zipFileName, std::ifstream::binary);
     if (!ofs)
         throw "Can't open file";
-    //кол-во не нулевых изменить на int?
+
     int count = count_if(frequency.begin(), frequency.end(), [](int& value)
     {
         return (value != 0);
@@ -85,44 +85,34 @@ void ZipFile(std::string fileName, std::vector<int> frequency, std::string code)
         }
         index++;
     });
+    int num = code.size();
+    unsigned long byteCount = 0;
+    unsigned long mod = 0;
+    while (num > 0)
+    {
+        num -= ioSize;
+        if (num > 0)
+        {
+            mod = num;
+            byteCount++;
+        }           
+    }
 
-    unsigned long byteCount = code.size() / ioSize;
-    unsigned long mod = code.size() % ioSize;
 
     ofs.write(reinterpret_cast<char*>(&byteCount), sizeof(byteCount));
     ofs.write(reinterpret_cast<char*>(&mod), sizeof(mod));
-
-    //int position = 0;
-    //int oldPos = 0;
-    //int iteration = (ceil((double)byteCount / ioSize));
-    //unsigned long values[ioSize/4];
-    //for (int j = 0; j < iteration; j++)
-    //{
-    //    unsigned char value[ioSize];
-    //    //strcpy(value, s.c_str());
-    //    for (int i = 0; byteCount > 0 & i < ioSize * iteration; byteCount -= ioSize, position += ioSize, i += ioSize)
-    //    {
-    //        std::bitset<ioSize> b(code.substr(j * ioSize, ioSize));
-    //        xz = static_cast<unsigned char>(b.to_ulong());
-    //        ofs.write(reinterpret_cast<char*>(&n), byteCount < ioSize);
-    //    }
-    //    
-    //    
-    //}
     int position = 0;
     while (position < byteCount)
     {
         std::bitset<ioSize> b(code.substr(position * ioSize, ioSize));
-        unsigned long value = b.to_ulong();
-        ofs.write(reinterpret_cast<char*>(&value), sizeof(value));
+        ofs.write(reinterpret_cast<char*>(&b), sizeof(b));
         position++;
         std::cout << "\r" << byteCount << "\\" << position << std::flush;
     }
-    if (mod > 0)
+    for (int i = 0; i < mod; i += 64)
     {
-        std::bitset<ioSize> b(code.substr(position * ioSize, mod));
-        unsigned long value = b.to_ulong();
-        ofs.write(reinterpret_cast<char*>(&value), sizeof(value));
+        std::bitset<CHAR_BIT*8> b(code.substr(position * ioSize + i, CHAR_BIT*8));
+        ofs.write(reinterpret_cast<char*>(&b), sizeof(b));
     }
 
    
@@ -155,31 +145,21 @@ std::string UnZipFile(std::string fileName, std::vector<int>& frequency, std::st
     ifs.read(reinterpret_cast<char*>(&byteCount), sizeof(byteCount));
     ifs.read(reinterpret_cast<char*>(&mod), sizeof(mod));
 
-    //int position = 0;
-    //unsigned char value[ioSize];
-    //ifs.read(reinterpret_cast<char*>(&value), sizeof(value));
-    //for (int i = 0; i < byteCount; i++)
-    //{
-    //    std::bitset<CHAR_BIT> b(value[i]);
-    //    code += b.to_string();
-    //}
-
-
     int position = 0;
     while (position < byteCount)
     {
+        std::bitset<ioSize> b("");
         unsigned long value;
-        ifs.read(reinterpret_cast<char*>(&value), sizeof(value));
-        std::bitset<ioSize> b(value);
+        ifs.read(reinterpret_cast<char*>(&b), sizeof(b));
         code += b.to_string();
         position++;
         std::cout << "\r" << byteCount << "\\" << position << std::flush;
     }
     if (mod > 0)
     {
+        std::bitset<ioSize> b("");
         unsigned long value;
-        ifs.read(reinterpret_cast<char*>(&value), sizeof(value));
-        std::bitset<ioSize> b(value);
+        ifs.read(reinterpret_cast<char*>(&b), sizeof(b));
         code += b.to_string().substr(ioSize - mod, ioSize);
     }
     return code;
@@ -268,7 +248,7 @@ void Zip(std::string fileName)
 }
 void UnZip(std::string fileName)
 {
-    std::string fileNameSecond("42.jpg");
+    std::string fileNameSecond("42.bmp");
     std::vector<int> frequency(freqSize, 0);
 
     std::vector<std::string> codes(freqSize, "");
@@ -291,7 +271,7 @@ void UnZip(std::string fileName)
 }
 int main()
 {
-    std::string fileName("4.jpg");
+    std::string fileName("4.bmp");
     Zip(fileName);
 
     UnZip(fileName);
