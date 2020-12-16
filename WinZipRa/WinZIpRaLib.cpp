@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include <fstream>
 #include <vector>
 #include <queue>
@@ -85,14 +85,6 @@ void ZipFile(std::string fileName, std::vector<int> frequency, std::string code)
         }
         index++;
     });
-    //for (int i = 0; i < frequency.size(); i++)
-    //{
-    //    if (frequency[i] != 0)
-    //    {
-    //        ofs.write(reinterpret_cast<char*>(&i), sizeof(i));
-    //        ofs.write(reinterpret_cast<char*>(&frequency[i]), sizeof(frequency[i]));
-    //    }
-    //}
     int num = code.size();
     unsigned long byteCount = 0;
     unsigned long mod = 0;
@@ -103,7 +95,7 @@ void ZipFile(std::string fileName, std::vector<int> frequency, std::string code)
         {
             mod = num;
             byteCount++;
-        }           
+        }
     }
 
 
@@ -119,16 +111,16 @@ void ZipFile(std::string fileName, std::vector<int> frequency, std::string code)
     }
     for (int i = 0; i < mod; i += 64)
     {
-        std::bitset<CHAR_BIT*8> b(code.substr(position * ioSize + i, CHAR_BIT*8));
+        std::bitset<CHAR_BIT * 8> b(code.substr(position * ioSize + i, CHAR_BIT * 8));
         ofs.write(reinterpret_cast<char*>(&b), sizeof(b));
     }
 
-   
+
 }
 
 std::string UnZipFile(std::string fileName, std::vector<int>& frequency, std::string code)
 {
-    std::string zipFileName = fileName + ".zir";
+    std::string zipFileName = fileName;
     std::ifstream ifs(zipFileName, std::ifstream::binary);
     if (!ifs)
         throw "Can't open file";
@@ -137,7 +129,7 @@ std::string UnZipFile(std::string fileName, std::vector<int>& frequency, std::st
     ifs.read(reinterpret_cast<char*>(&count), sizeof(count));
 
     int index = 0;
-    while(index < count)
+    while (index < count)
     {
         unsigned char ch;
         ifs.read(reinterpret_cast<char*>(&ch), sizeof(ch));
@@ -191,7 +183,7 @@ std::string GetText(Node::pointer root, std::string str)
                     text += node->GetCh();
                     node = root;
                 }
-            }        
+            }
         }
         else
         {
@@ -275,13 +267,4 @@ void UnZip(std::string fileName, std::string fileNameSecond)
 
     std::string text = GetText(queue.top(), code);
     WriteFile(fileNameSecond, text);
-}
-int main()
-{
-    std::string fileName("4.bmp");
-    Zip(fileName);
-
-    UnZip(fileName, "42.bmp");
-
-    return 0;
 }
