@@ -12,6 +12,7 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #include <codecvt>
 #include "Node.h"
 #include "WinZipRaLib.h"
+#include <thread>
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -23,7 +24,7 @@ std::string GetPath(std::string path)
 {
     std::string pathUnzip;
     int dotCount = 0;
-    for (int i = path.size();; i--)
+    for (int i = path.size(); i > 0; i--)
         if (path[i] == '.')
         {
             dotCount++;
@@ -36,7 +37,17 @@ std::string GetPath(std::string path)
                 return firstPart.erase(i, size - i) + "UnZIP" + secondPart;
             }
         }
+    return "";
+}
 
+boolean isZir(std::string path)
+{
+    for (int i = path.size(); i > 0; i--)
+        if (path[i] == '.')
+        {
+            return path.erase(0, i) == ".zir";
+        }
+    return false;
 }
 
 int CALLBACK  wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR szCmdLine, int nCmdShow)
@@ -46,7 +57,7 @@ int CALLBACK  wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR szCmdLine, int nCmd
     WNDCLASSEX wc{ sizeof(WNDCLASSEX) };
     wc.cbClsExtra = 0;
     wc.cbWndExtra = 0;
-    wc.hbrBackground = reinterpret_cast<HBRUSH>(GetStockObject(WHITE_BRUSH));
+    wc.hbrBackground = reinterpret_cast<HBRUSH>(GetStockObject(GRAY_BRUSH));
     wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
     wc.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
     wc.hIconSm = LoadIcon(nullptr, IDI_APPLICATION);
@@ -62,7 +73,7 @@ int CALLBACK  wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR szCmdLine, int nCmd
     }
 
 
-    if (hwnd = CreateWindow(wc.lpszClassName, L"Paint", WS_OVERLAPPEDWINDOW, 0, 0, 1000, 500, nullptr, nullptr, wc.hInstance, nullptr);
+    if (hwnd = CreateWindow(wc.lpszClassName, L"WinZipRa", WS_OVERLAPPEDWINDOW, 0, 0, 325, 325, nullptr, nullptr, wc.hInstance, nullptr);
         hwnd == INVALID_HANDLE_VALUE)
     {
         return EXIT_FAILURE;
@@ -98,19 +109,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
             L"BUTTON",
             L"Browse",
             WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-            0, 0, 150, 50, hWnd, reinterpret_cast<HMENU>(0), nullptr, nullptr
+            25, 0, 250, 75, hWnd, reinterpret_cast<HMENU>(0), nullptr, nullptr
         );
         HWND hButtonFind = CreateWindow(
             L"BUTTON",
             L"ZIP",
             WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-            0, 50, 150, 50, hWnd, reinterpret_cast<HMENU>(1), nullptr, nullptr
+            25, 100, 250, 75, hWnd, reinterpret_cast<HMENU>(1), nullptr, nullptr
         );
         HWND hFileBrowse = CreateWindow(
             L"BUTTON",
             L"UNZIP",
             WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-            0, 175, 150, 50, hWnd, reinterpret_cast<HMENU>(5), nullptr, nullptr
+            25, 200, 250, 75, hWnd, reinterpret_cast<HMENU>(5), nullptr, nullptr
         );
 
 
@@ -135,24 +146,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
             hr = pFileOpen->Show(NULL);
             IShellItem* pItem;
             LPWSTR pszFilePath;
-            hr = pFileOpen->GetResult(&pItem);
-            hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
-            const wchar_t* file = pszFilePath;
-            std::wstring widestr(file);
-            filePath = widestr;
-            CoTaskMemFree(pszFilePath);
-            pItem->Release();
-            pFileOpen->Release();
+            std::wstring widestr;
+            const wchar_t* file;
+            if (hr == 0)
+            {
+                hr = pFileOpen->GetResult(&pItem);
+                hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
+                file = pszFilePath;
+                widestr = file;
+                filePath = widestr;
+                CoTaskMemFree(pszFilePath);
+                pItem->Release();
+                pFileOpen->Release();
+            }
             CoUninitialize();
         }
         break;
         case 1:
         {
             if (filePath.size() == 0)
-                return 0;
-            
+                return 0;           
             std::string path(filePath.begin(), filePath.end());
-
             Zip(path);
         }
         break;
@@ -160,10 +174,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lParam)
         {
             if (filePath.size() == 0)
                 return 0;
-
             std::string path(filePath.begin(), filePath.end());
-            std::string a = GetPath(path);
-            UnZip(path, GetPath(path));
+            std::string zirPath = GetPath(path);
+            if (zirPath != "" || isZir(zirPath))
+                UnZip(path, GetPath(path));
         }
         break;
         default:
