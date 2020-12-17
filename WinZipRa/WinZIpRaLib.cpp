@@ -5,7 +5,7 @@
 #include "Node.h"
 #include <bitset>
 #define freqSize 256
-#define ioSize 1024 * 1024 * 1
+#define ioSize 64
 
 using PriQueue = std::priority_queue<Node::pointer, std::vector<Node::pointer>, LowestPriority>;
 
@@ -98,7 +98,6 @@ void ZipFile(std::string fileName, std::vector<int> frequency, std::string code)
         }
     }
 
-
     ofs.write(reinterpret_cast<char*>(&byteCount), sizeof(byteCount));
     ofs.write(reinterpret_cast<char*>(&mod), sizeof(mod));
     int position = 0;
@@ -107,11 +106,10 @@ void ZipFile(std::string fileName, std::vector<int> frequency, std::string code)
         std::bitset<ioSize> b(code.substr(position * ioSize, ioSize));
         ofs.write(reinterpret_cast<char*>(&b), sizeof(b));
         position++;
-        std::cout << "\r" << byteCount << "\\" << position << std::flush;
     }
-    for (int i = 0; i < mod; i += 64)
+    for (int i = 0; i < mod; i += 8)
     {
-        std::bitset<CHAR_BIT * 8> b(code.substr(position * ioSize + i, CHAR_BIT * 8));
+        std::bitset<CHAR_BIT> b(code.substr(position * ioSize + i, CHAR_BIT));
         ofs.write(reinterpret_cast<char*>(&b), sizeof(b));
     }
 
@@ -153,14 +151,13 @@ std::string UnZipFile(std::string fileName, std::vector<int>& frequency, std::st
         ifs.read(reinterpret_cast<char*>(&b), sizeof(b));
         code += b.to_string();
         position++;
-        std::cout << "\r" << byteCount << "\\" << position << std::flush;
     }
     if (mod > 0)
     {
         std::bitset<ioSize> b("");
         unsigned long value;
         ifs.read(reinterpret_cast<char*>(&b), sizeof(b));
-        code += b.to_string().substr(ioSize - mod, ioSize);
+        code += b.to_string().substr(ioSize - mod, mod);
     }
     return code;
 }
